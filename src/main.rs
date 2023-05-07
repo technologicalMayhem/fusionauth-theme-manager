@@ -11,7 +11,7 @@ use data::Metadata;
 use json_data::{Root, Templates, Theme};
 use reqwest::{
     blocking::{Client, ClientBuilder},
-    header::{HeaderMap, HeaderValue},
+    header::{HeaderMap, HeaderValue, CONTENT_TYPE},
 };
 use serde_json::from_str;
 
@@ -84,6 +84,7 @@ fn set_theme(client: &Client, url: &str, path: &str) -> Result<()> {
     let request = client
         .put(format!("{url}/api/theme/{id}"))
         .body(serialized)
+        .header(CONTENT_TYPE, "application/json")
         .build()?;
     client.execute(request)?;
 
