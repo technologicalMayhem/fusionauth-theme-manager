@@ -10,7 +10,7 @@ use color_eyre::Result;
 use data::Metadata;
 use json_data::{Root, Templates, Theme};
 use reqwest::{
-    blocking::{Client, ClientBuilder},
+    blocking::{Client, ClientBuilder, Response},
     header::{HeaderMap, HeaderValue, CONTENT_TYPE},
 };
 use serde_json::from_str;
@@ -59,6 +59,10 @@ fn main() -> Result<()> {
 fn get_theme(client: &Client, url: &str, id: &str, path: &str) -> Result<()> {
     let request = client.get(format!("{url}/api/theme/{id}")).build()?;
     let response = client.execute(request)?;
+    if !response.status().is_success() {
+        print_error(response);
+        return Ok(());
+    }
     let text = response.text()?;
     let root = from_str::<Root>(&text)?;
     let theme = root.theme;
@@ -86,9 +90,21 @@ fn set_theme(client: &Client, url: &str, path: &str) -> Result<()> {
         .body(serialized)
         .header(CONTENT_TYPE, "application/json")
         .build()?;
-    client.execute(request)?;
+    let response = client.execute(request)?;
+    print_error(response);
 
     Ok(())
+}
+
+fn print_error(response: Response) {
+    if !response.status().is_success() {
+        println!("Failed to set theme ({})", response.status());
+        if let Ok(text) = response.text() {
+            if !text.is_empty() {
+                println!("{text}");   
+            }
+        }
+    }
 }
 
 fn write_theme_to_dir(path: &str, theme: &Theme) -> Result<()> {
